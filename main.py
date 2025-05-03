@@ -9,7 +9,7 @@ TOKEN = '8141321315:AAGqrZ7tZ5j6rkVKfS9oeoxF_-ZViLSyCYQ'
 bot_url = f'https://api.telegram.org/bot{TOKEN}/'
 app = Flask(__name__)
 
-# 30 stylish designs
+# Stylish name decorations
 decorations = [
     "𓆰𓏲!𓂃ֶꪳ{name} 𓆩〭〬🦋𓆪ꪾ", "꧁༒☬{name}☬༒꧂", "★彡[{name}]彡★",
     "♛〔✯{name}✯〕♛", "꧁𓆩{name}𓆪꧂", "{name}❥︎𓆩︎︎︎︎𝑬𝒎𝒐︎︎︎︎𓆪", "𒆜{name}𒆜",
@@ -21,7 +21,7 @@ decorations = [
 ]
 
 def make_human_text(text):
-    clean = re.sub(r'[.,_\-!":*&?]', '', text)
+    clean = re.sub(r"[.,_\-!\"':*&?]", '', text)
     clean = re.sub(r'\s+', ' ', clean).strip()
     starters = ['Bro', 'Sun na', 'Arey yaar', 'Suno', 'Hmm', 'Waise', 'Dekho']
     enders = ['samjhe?', 'bas yahi tha', 'thik hai?', 'hai na?', 'fir milte', 'chal theek hai']
@@ -34,6 +34,12 @@ def send_message(chat_id, text):
     requests.post(url, json=payload)
 
 def delayed_design(chat_id, name):
+    loading_texts = [
+        "⏳ Designing your style...",
+        "✨ Crafting your fancy vibe...",
+        "⚙️ Loading aesthetic energy..."
+    ]
+    send_message(chat_id, random.choice(loading_texts))
     time.sleep(2.5)
     styled = random.choice(decorations).replace('{name}', name.upper())
     send_message(chat_id, styled)
@@ -46,7 +52,24 @@ def webhook():
         chat_id = msg['chat']['id']
         user_text = msg['text']
 
-        if user_text.startswith('/human'):
+        # /start command
+        if user_text.startswith('/start'):
+            def send_intro():
+                welcome_lines = [
+                    "⏳ Loading Baklol Baba...",
+                    "✨ Welcome to Baklol Baba Bot!",
+                    "Here's what I can do:",
+                    "➤ /human <text> – Make your text sound human",
+                    "➤ /design <name> – Make your name stylish & fancy",
+                    "➤ More coming soon... Stay tuned!"
+                ]
+                for line in welcome_lines:
+                    send_message(chat_id, line)
+                    time.sleep(1.5)
+            threading.Thread(target=send_intro).start()
+
+        # /human command
+        elif user_text.startswith('/human'):
             clean_input = user_text.replace('/human', '', 1).strip()
             if clean_input:
                 human_text = make_human_text(clean_input)
@@ -54,16 +77,23 @@ def webhook():
             else:
                 send_message(chat_id, "Bhai, /human ke baad kuch text to likh!")
 
+        # /design command
         elif user_text.startswith('/design'):
             name = user_text.replace('/design', '', 1).strip()
             if name:
-                loading_texts = ["Designing your style...", "Crafting your fancy vibe...", "Loading aesthetic energy..."]
-                send_message(chat_id, random.choice(loading_texts))
                 threading.Thread(target=delayed_design, args=(chat_id, name)).start()
             else:
                 send_message(chat_id, "Naam to de bhai /design ke baad!")
+
+        # Auto-clean normal messages
+        else:
+            clean_text = re.sub(r"[.,_\-!\"':*&?]", '', user_text)
+            clean_text = re.sub(r"\s+", ' ', clean_text).strip()
+            if clean_text and clean_text != user_text:
+                send_message(chat_id, clean_text)
 
     return 'ok'
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
+    
