@@ -17,7 +17,10 @@ decorations = [
     "꧁ঔৣ☬{name}☬ঔৣ꧂", "☬{name}☬", "★·.·´¯`·.·★ {name} ★·.·´¯`·.·★",
     "◥꧁{name}꧂◤", "⫷⫷{name}⫸⫸", "♡{name}♡", "{name}シ", "彡☆{name}☆彡",
     "⌯{name}⌯", "ᯓ★{name}★ᯓ", "➶➶{name}➷➷", "꧁༺{name}༻꧂", "⸻{name}⸻",
-    "⋆｡°✩{name}✩°｡⋆", "༒︎︎{name}༒︎︎", "⌈{name}⌋", "⟆{name}⟇", "༄{name}༄"
+    "⋆｡°✩{name}✩°｡⋆", "༒︎︎{name}༒︎︎", "⌈{name}⌋", "⟆{name}⟇", "༄{name}༄",
+    "ᯓ𓆰ꪑꫀꪶꪖꪀꪖ𓆪꯭꯭᭡", "𝐊𝚨𝛅𝚮𝐕𝚰 </>🦋🤍", "🦋𝔂𝓪𝓶𝓲여보🦋",
+    "꧁༒☬{name}☬༒꧂", "✿{name}✿", "♡{name}♡", "{name}シ", "彡☆{name}☆彡", "♡✯{name}✯♡",
+    "⫷⫷{name}⫸⫸", "✞{name}✞", "⎯⎯⎯⎯⎯⎯", "☆•*´¨`*•☆ {name} ☆•*´¨`*•☆"
 ]
 
 def make_human_text(text):
@@ -31,6 +34,13 @@ def make_human_text(text):
 def send_message(chat_id, text):
     url = bot_url + 'sendMessage'
     payload = {'chat_id': chat_id, 'text': text}
+    response = requests.post(url, json=payload)
+    return response.json()
+
+def delete_message(chat_id, message_id, delay=2):
+    time.sleep(delay)
+    url = bot_url + 'deleteMessage'
+    payload = {'chat_id': chat_id, 'message_id': message_id}
     requests.post(url, json=payload)
 
 def delayed_design(chat_id, name):
@@ -39,10 +49,16 @@ def delayed_design(chat_id, name):
         "✨ Crafting your fancy vibe...",
         "⚙️ Loading aesthetic energy..."
     ]
-    send_message(chat_id, random.choice(loading_texts))
+    loading_msg = send_message(chat_id, random.choice(loading_texts))
+    threading.Thread(target=delete_message, args=(chat_id, loading_msg['result']['message_id'], 2)).start()
+    
     time.sleep(2.5)
-    styled = random.choice(decorations).replace('{name}', name.upper())
-    send_message(chat_id, styled)
+
+    # Send all 30 designs one by one with a delay
+    for design in decorations[:30]:  # Only the first 30 designs will be selected
+        styled = design.replace('{name}', name.upper())
+        send_message(chat_id, styled)
+        time.sleep(1)  # Add delay between each design to avoid spamming the user
 
 @app.route('/', methods=['POST'])
 def webhook():
@@ -64,8 +80,10 @@ def webhook():
                     "➤ More coming soon... Stay tuned!"
                 ]
                 for line in welcome_lines:
-                    send_message(chat_id, line)
+                    intro_msg = send_message(chat_id, line)
                     time.sleep(1.5)
+                    threading.Thread(target=delete_message, args=(chat_id, intro_msg['result']['message_id'], 2)).start()
+
             threading.Thread(target=send_intro).start()
 
         # /human command
@@ -96,4 +114,3 @@ def webhook():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
-    
